@@ -37,3 +37,16 @@ Zone:PlayerEntered(function()
 end)
 
 Zone:GetPlayers()
+
+OR FOR PARTS:
+
+Zone:PartEntered(function()
+
+end)
+
+Zone:PartExited(function()
+
+end)
+
+Zone:GetPartsInZone()
+
