@@ -1,28 +1,4 @@
-
-
 --[[
-
-MIT License
-
-Copyright (c) 2025 Ƶ V 8 0 0
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ██╗░░░██╗███████╗██╗░░██╗██╗░██████╗              
 ██║░░░██║██╔════╝╚██╗██╔╝╚█║██╔════╝              
 ╚██╗░██╔╝█████╗░░░╚███╔╝░░╚╝╚█████╗░              
@@ -103,6 +79,7 @@ local Players = game:GetService("Players")
 
 
 VexsZoneSystem.new = function(SystemName,Size)
+	local self = setmetatable({},VexsZoneSystem)
 	
 	if typeof(SystemName) == "Vector3" then
 		if typeof(SystemName) == "Vector3" and typeof(Size) ~= "Vector3" then
@@ -112,8 +89,6 @@ VexsZoneSystem.new = function(SystemName,Size)
 	else
 		error("Invalid input parameter one must be a base part or Vector3")
 	end
-	
-	local self = setmetatable({},VexsZoneSystem)
 	
 	self.PlayersInZone = {}
 	self.PartsInZone = {}
@@ -231,24 +206,21 @@ VexsZoneSystem.new = function(SystemName,Size)
 	return self
 end
 
-
-
-function VexsZoneSystem:localPlayerEntered(callback)
+local function RunPlayerEnterCode(self,callback,callbackNum)
 	if RunService:IsClient() then
 		local LocalPlayer = Players.LocalPlayer
-		self.PlayersT[LocalPlayer][1].Event:Connect(callback)
+		self.PlayersT[LocalPlayer][callbackNum].Event:Connect(callback)
 	else
-		error("localPlayerEntered only works on the Client")
+		error("localPlayer only works on the Client")
 	end
 end
 
+function VexsZoneSystem:localPlayerEntered(callback)
+	RunPlayerEnterCode(self,callback,1)
+end
+
 function VexsZoneSystem:localPlayerExited(callback)
-	if RunService:IsClient() then
-		local LocalPlayer = Players.LocalPlayer
-		self.PlayersT[LocalPlayer][2].Event:Connect(callback)
-	else
-		error("localPlayerEntered only works on the Client")
-	end
+	RunPlayerEnterCode(self,callback,2)
 end
 
 
@@ -277,4 +249,3 @@ function VexsZoneSystem:GetPartsInZone()
 end
 
 return VexsZoneSystem
-
