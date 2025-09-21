@@ -80,7 +80,7 @@ local Players = game:GetService("Players")
 
 VexsZoneSystem.new = function(SystemName,Size)
 	local self = setmetatable({},VexsZoneSystem)
-	
+
 	if typeof(SystemName) == "Vector3" then
 		if typeof(SystemName) == "Vector3" and typeof(Size) ~= "Vector3" then
 			error("When using a Vector3 The second parameter size must be set to a vector 3.")
@@ -89,85 +89,92 @@ VexsZoneSystem.new = function(SystemName,Size)
 	else
 		error("Invalid input parameter one must be a base part or Vector3")
 	end
-	
+
 	self.PlayersInZone = {}
 	self.PartsInZone = {}
-	
+	self.FindParts = false;
+
 	self.PlayerGEvents = {
 		Instance.new("BindableEvent"); --Player Enter
 		Instance.new("BindableEvent"); --Player Exit
 	}
-	
+
 	self.PartsGEvents = {
 		Instance.new("BindableEvent"); --Part Enter
 		Instance.new("BindableEvent"); --Part Exit
 	}
-	
+
 	self.PlayersT = {
 		["PLAYERNAME"] = {}
 	}
-	
+
 	local function UpdateLoop()
-		if SystemName then
-			local PlayersInServer = Players:GetPlayers()
-			local NewList = {}
-			local PartsList = {}
-			local region = nil
-			
-			local SysVect3 = nil
-			local SysSize = nil
-			
-			if typeof(SystemName) == "Vector3" then
-				SysVect3 = SystemName
-				SysSize = Size
-			else
-				SysVect3 = SystemName.Position
-				SysSize = SystemName.Size
-			end
-			
-			local region = Region3.new(SysVect3 - SysSize/2,SysVect3 + SysSize/2)
+		if not SystemName then return end
 
-			local parts = workspace:FindPartsInRegion3(region, nil, math.huge)
+		local PlayersInServer = Players:GetPlayers()
+		local NewPlayers = {}
+		local NewParts = {}
+		local region, SysVect3, SysSize
 
-			for _,Part in pairs(parts) do
-				local Player = Players:GetPlayerFromCharacter(Part.Parent)
-				if Player and not table.find(NewList,Player) then
-					table.insert(NewList,Player)
-				elseif not Player and not table.find(PartsList,Part) then
-					table.insert(PartsList,Part)
-				end
-			end
-
-			local PartsLoop = function(StartT,FindT,callback)
-				for _,Part in pairs(StartT) do
-					if not table.find(FindT,Part) then
-						callback(Part)
-					end
-				end
-			end
-
-			PartsLoop(PartsList,self.PartsInZone,function(Part)
-				self.PartsGEvents[1]:Fire(Part)
-			end)
-
-			PartsLoop(self.PartsInZone,PartsList,function(Part)
-				self.PartsGEvents[2]:Fire(Part)
-			end)
-
-			PartsLoop(NewList,self.PlayersInZone,function(Player)
-				self.PlayersT[Player][1]:Fire()
-				self.PlayerGEvents[1]:Fire(Player)
-			end)
-
-			PartsLoop(self.PlayersInZone,NewList,function(Player)
-				self.PlayersT[Player][2]:Fire()
-				self.PlayerGEvents[2]:Fire(Player)
-			end)
-
-			self.PartsInZone = PartsList
-			self.PlayersInZone = NewList
+		if typeof(SystemName) == "Vector3" then
+			SysVect3 = SystemName
+			SysSize = Size
+		else
+			SysVect3 = SystemName.Position
+			SysSize = SystemName.Size
 		end
 
+		region = Region3.new(SysVect3 - SysSize/2, SysVect3 + SysSize/2)
+		local parts = workspace:FindPartsInRegion3(region, nil, math.huge)
+
+		local NewList = {}
+		local PartsList = {}
+
+		for _, Part in pairs(parts) do
+			local Player = Players:GetPlayerFromCharacter(Part.Parent)
+			if Player then
+				NewList[Player] = true
+			else
+				PartsList[Part] = true
+			end
+		end
+
+		local function PartsLoop(NewDict, OldTable, onEnter, onExit)
+			local OldDict = {}
+			for _, v in pairs(OldTable) do OldDict[v] = true end
+			for obj in pairs(NewDict) do
+				if not OldDict[obj] and onEnter then
+					onEnter(obj)
+				end
+			end
+			for obj in pairs(OldDict) do
+				if not NewDict[obj] and onExit then
+					onExit(obj)
+				end
+			end
+		end
+
+		PartsLoop(PartsList, self.PartsInZone,
+			function(Part) self.PartsGEvents[1]:Fire(Part) end,
+			function(Part) self.PartsGEvents[2]:Fire(Part) end
+		)
+
+		PartsLoop(NewList, self.PlayersInZone,
+			function(Player)
+				self.PlayersT[Player][1]:Fire()
+				self.PlayerGEvents[1]:Fire(Player)
+			end,
+			function(Player)
+				self.PlayersT[Player][2]:Fire()
+				self.PlayerGEvents[2]:Fire(Player)
+			end
+		)
+
+		self.PartsInZone = {}
+		for Part in pairs(PartsList) do table.insert(self.PartsInZone, Part) end
+
+		self.PlayersInZone = {}
+		for Player in pairs(NewList) do table.insert(self.PlayersInZone, Player) end
 	end
 
 	task.spawn(function()
@@ -175,10 +182,8 @@ VexsZoneSystem.new = function(SystemName,Size)
 			UpdateLoop()
 		end
 	end)
-	
-	
-	
-	
+
+
 	local function AddCode(Player)
 		if not self.PlayersT[Player] then
 			self.PlayersT[Player] = {
@@ -187,14 +192,14 @@ VexsZoneSystem.new = function(SystemName,Size)
 			}
 		end
 	end
-	
-	
+
+
 	for i,Player in pairs(Players:GetPlayers()) do
 		AddCode(Player)
 	end
-	
+
 	Players.PlayerAdded:Connect(AddCode)
-	
+
 	Players.PlayerRemoving:Connect(function(Player)
 		if self.PlayersT[Player] then
 			self.PlayersT[Player][1]:Destroy()
@@ -202,7 +207,7 @@ VexsZoneSystem.new = function(SystemName,Size)
 			self.PlayersT[Player] = nil
 		end
 	end)
-	
+
 	return self
 end
 
