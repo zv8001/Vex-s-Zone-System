@@ -115,17 +115,19 @@ VexsZoneSystem.new = function(SystemName,Size)
 		local NewPlayers = {}
 		local NewParts = {}
 		local region, SysVect3, SysSize
+		
+		local parts = nil
 
 		if typeof(SystemName) == "Vector3" then
 			SysVect3 = SystemName
 			SysSize = Size
+			region = Region3.new(SysVect3 - SysSize/2, SysVect3 + SysSize/2)
+			 parts = workspace:FindPartsInRegion3(region, nil, math.huge)
 		else
-			SysVect3 = SystemName.Position
-			SysSize = SystemName.Size
+			parts = workspace:GetPartsInPart(SystemName)
 		end
 
-		region = Region3.new(SysVect3 - SysSize/2, SysVect3 + SysSize/2)
-		local parts = workspace:FindPartsInRegion3(region, nil, math.huge)
+		
 
 		local NewList = {}
 		local PartsList = {}
